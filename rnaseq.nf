@@ -71,3 +71,42 @@ process fastqc {
     fastqc -o fastqc_${sample_id}_logs -f fastq -q ${reads}
     """
 }
+
+
+process multiqc {
+
+    publishDir params.outdir, mode: 'copy'
+
+    input:
+    path '*' from fastqc_ch.collect()
+
+    output:
+    path 'multiqc_report.html' into ch_multiqc_report
+
+    script:
+    """
+    multiqc .
+    """
+}
+
+workflow.onComplete {
+
+    c_green = "\033[0;32m";
+    c_purple = "\033[0;35m";
+    c_red =  "\033[0;31m";
+    c_reset = "\033[0m";
+
+    if (workflow.stats.ignoredCount > 0 && workflow.success) {
+        log.info "-${c_purple}Warning, pipeline completed, but with errored process(es) ${c_reset}-"
+        log.info "-${c_red}Number of ignored errored process(es) : ${workflow.stats.ignoredCount} ${c_reset}-"
+        log.info "-${c_green}Number of successfully ran process(es) : ${workflow.stats.succeedCount} ${c_reset}-"
+    }
+
+    if (workflow.success) {
+        log.info "-${c_purple}[nf-bwa-mem]${c_green} Pipeline completed successfully${c_reset}-"
+    } else {
+        checkHostname()
+        log.info "-${c_purple}[nf-bwa-mem]${c_red} Pipeline completed with errors${c_reset}-"
+    }
+
+}
