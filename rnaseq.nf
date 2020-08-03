@@ -68,6 +68,6 @@ process fastqc {
     script:
     """
     mkdir fastqc_${sample_id}_logs
-    echo fastqc -o fastqc_${sample_id}_logs -f fastq -q ${reads}
+    fastqc -o fastqc_${sample_id}_logs -f fastq -q ${reads}
     """
 }

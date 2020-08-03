@@ -9,3 +9,8 @@ throw new IllegalArgumentException("Unkown arg")
 .collect() # pulls all channel inputs into list
 
 ```
+# Docker
+
+docker build --tag nriviera/bwa-nf-test:test1.0 .
+
+docker push nriviera/bwa-nf-test:test1.0
