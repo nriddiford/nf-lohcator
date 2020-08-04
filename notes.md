@@ -11,9 +11,33 @@ throw new IllegalArgumentException("Unkown arg")
 ```
 # Docker
 
+`touch Dockerfile`
+### add commands in Dockerfile
+`docker build -t my-image .`
+`docker run my-image`
+### -it for interactive mode, where we can 'jump into' the container
+
+### mount filesytem inside container (so you can access files)
+`docker run --volume $HOME:$HOME --workdir $PWD -my-image`
+
+### see images
+
+`docker images`
+
+### tag
+
+`docker tag my-image nriviera/my-image:v1`
+
+### push
+
+`docker push nriviera/my-image:v1`
+
+### build
 docker build --tag nriviera/bwa-nf-test:test1.0 .
 
 docker push nriviera/bwa-nf-test:test1.0
+
+
 
 # resume run from cached results
 -resume

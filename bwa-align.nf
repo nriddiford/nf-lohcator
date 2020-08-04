@@ -16,8 +16,6 @@ log.info """\
 
 process index {
 
-    cpus 2
-
     input:
     path genome from params.genome
 
@@ -40,7 +38,6 @@ process align {
 
     tag "$sample_id"
     publishDir "$params.outdir/bam"
-    cpus 2
 
     input:
     path genome from params.genome
