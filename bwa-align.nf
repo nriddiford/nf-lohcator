@@ -1,5 +1,3 @@
-params.reads = "$baseDir/data/*{forward,reverse}.fq.gz"
-params.genome = "$baseDir/data/X.fasta"
 params.multiqc = "$baseDir/multiqc"
 params.outdir = "$baseDir/results"
 
