@@ -1,110 +1,107 @@
-#!/usr/bin/env nextflow
+params.multiqc = "$baseDir/multiqc"
+params.outdir = "$baseDir/results"
 
-// Channel.from(1, 2, 3, 6)
-//     .filter{ it > 1 }
-//     .map{ it -> [it, it * it]}
-//     .view{ num, sqr -> "This is > 1: $num\nThe square of $num = $sqr" }
+log.info """\
+    This is a NEXTFLOW RNA-SEQ PIPELINE
 
-params.genome = "$baseDir/data/dmel_6.12.fa"
-println "Using genome: $params.genome"
+    genome: ${params.genome}
+    read directory: ${params.reads}
+    outdir: ${params.outdir}
 
-println("GroupByTuple:")
-Channel
-    .from([1,'A'], [1,'B'], [2,'C'], [3,'B'], [1,'C'], [2,'A'])
-    .groupTuple(by:0)
-    .view()
-
-left = Channel.from(['X', 1], ['Y', 2], ['Z', 3], ['P', 7])
-right = Channel.from(['Z', 6], ['Y', 5], ['X', 4])
-
-println("join:")
-left
-    .join(right, remainder: true)
-    .view()
-
-words_ch = Channel
-    .from('hello', 'world', 'again')
-    .map{ word -> [word, word.size()]}
-
-process greeting {
-    echo true
-
-    input:
-    tuple val(word), val(word_size) from words_ch
-
-    script:
     """
-    echo word: $word, length: $word_size
-    """
-}
+.stripIndent()
 
-files_ch = Channel
-    .fromPath('data/*.fq.gz', checkIfExists: true)
-    .map{ file -> [file.name, file ]}
 
-process fileecho {
-    echo true
-
-    input:
-    tuple val(fname), file(reads) from files_ch
-
-    script:
-    """
-    echo Alignment of sample $fname with $reads
-    """
-}
-
-// Split a channel into two
-reads_ch = Channel
-    .fromFilePairs('data/*{forward,reverse}.fq.gz', checkIfExists: true)
-    .into{ reads_ch1; reads_ch2 }
-
-process align_sample {
-    tag "$sample_id"
+process index {
 
     input:
     path genome from params.genome
-    tuple val(sample_id), path(reads) from reads_ch1
 
-    // when:
-    // genome.name =~ /6.13/
-
+    // println "cpus: $task.cpus"
     output:
-    tuple val(sample_id), file("${sample_id}.bam") into bam_ch
+    file "*.{amb,ann,bwt,pac,sa}" into bwa_index_ch
 
     script:
     """
-    echo bwa mem $genome $sample_id > ${sample_id}.bam
+    bwa index $genome
     """
 }
 
-bam_ch.view()
+Channel
+    .fromFilePairs(params.reads, checkIfExists: true)
+    .into{ reads_ch1; reads_ch2 }
 
-process alignSequences {
+
+process align {
+
     tag "$sample_id"
-
-    methods = ['small_widow', 'medium_window', 'large_window']
+    publishDir "$params.outdir/bam"
 
     input:
-    tuple val(sample_id), path(reads) from reads_ch2
-    each mode from methods
+    path genome from params.genome
+    file '*' from bwa_index_ch
+    tuple sample_id, path(reads) from reads_ch1
+
+    output:
+    file '*.bam' into bam_ch
 
     """
-    echo somefun -in $reads --mode $mode
+    bwa mem $genome ${reads[0]} ${reads[1]} > ${sample_id}.bam
     """
 }
 
-//
-// process index_sample {
-//
-//     input:
-//     file sample_bam from bam_ch
-//
-//     output:
-//     file sample_bai into bai_ch
-//
-//     script:
-//     """
-//     echo samtools index $sample_bam
-//     """
-// }
+
+process fastqc {
+    tag "FASTQC on $sampl_id"
+
+    input:
+    tuple sample_id, path(reads) from reads_ch2
+
+    output:
+    path "fastqc_${sample_id}_logs" into fastqc_ch
+
+    script:
+    """
+    mkdir fastqc_${sample_id}_logs
+    fastqc -o fastqc_${sample_id}_logs -f fastq -q ${reads}
+    """
+}
+
+
+process multiqc {
+
+    publishDir params.outdir, mode: 'copy'
+
+    input:
+    path '*' from fastqc_ch.collect()
+
+    output:
+    path 'multiqc_report.html' into ch_multiqc_report
+
+    script:
+    """
+    multiqc .
+    """
+}
+
+workflow.onComplete {
+
+    c_green = "\033[0;32m";
+    c_purple = "\033[0;35m";
+    c_red =  "\033[0;31m";
+    c_reset = "\033[0m";
+
+    if (workflow.stats.ignoredCount > 0 && workflow.success) {
+        log.info "-${c_purple}Warning, pipeline completed, but with errored process(es) ${c_reset}-"
+        log.info "-${c_red}Number of ignored errored process(es) : ${workflow.stats.ignoredCount} ${c_reset}-"
+        log.info "-${c_green}Number of successfully ran process(es) : ${workflow.stats.succeedCount} ${c_reset}-"
+    }
+
+    if (workflow.success) {
+        log.info "-${c_purple}[nf-bwa-mem]${c_green} Pipeline completed successfully${c_reset}-"
+    } else {
+        checkHostname()
+        log.info "-${c_purple}[nf-bwa-mem]${c_red} Pipeline completed with errors${c_reset}-"
+    }
+
+}
