@@ -1,0 +1,12 @@
+name: bwa
+channels:
+  - bioconda
+  - r
+  - defaults
+  - conda-forge
+dependencies:
+  - bwa=0.7.17=h2573ce8_7
+  - perl=5.26.2=h4e221da_0
+  - zlib=1.2.11=h1de35cc_3
+prefix: /Users/Nick_curie/miniconda2/envs/bwa
+
