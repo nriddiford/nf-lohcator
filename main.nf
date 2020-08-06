@@ -13,6 +13,12 @@ log.info """\
 
 
 process index {
+    // beforeScript """
+    // export PATH="/bioinfo/guests/nriddifo/miniconda2/bin:\${PATH}"
+    // source activate nf-align
+    // """
+
+    label 'bwa'
 
     input:
     path genome from params.genome
@@ -34,6 +40,7 @@ Channel
 
 process align {
 
+    label 'bwa'
     tag "$sample_id"
     publishDir "$params.outdir/bam"
 
@@ -52,6 +59,8 @@ process align {
 
 
 process fastqc {
+
+    label 'fastqc'
     tag "FASTQC on $sampl_id"
 
     input:
@@ -71,6 +80,7 @@ process fastqc {
 process multiqc {
 
     publishDir params.outdir, mode: 'copy'
+    label 'fastqc'
 
     input:
     path '*' from fastqc_ch.collect()
