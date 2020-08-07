@@ -1,0 +1,43 @@
+name: varscan
+channels:
+  - https://repo.continuum.io/pkgs/free
+  - conda-forge
+  - bioconda
+  - defaults
+  - r
+  - https://conda.anaconda.org/dranew
+dependencies:
+  - bzip2=1.0.6=h470a237_2
+  - ca-certificates=2018.8.24=ha4d7672_0
+  - certifi=2018.8.24=py27_1001
+  - curl=7.62.0=h74213dd_0
+  - java-jdk=8.0.92=1
+  - krb5=1.16.2=hbb41f41_0
+  - libcurl=7.62.0=hbdb9355_0
+  - libdeflate=1.0=h470a237_0
+  - libedit=3.1.20170329=haf1bffa_1
+  - libffi=3.2.1=hfc679d8_5
+  - libgcc=5.2.0=0
+  - libgcc-ng=7.2.0=hdf63c60_3
+  - libssh2=1.8.0=h5b517e9_3
+  - libstdcxx-ng=7.2.0=hdf63c60_3
+  - ncurses=6.1=hfc679d8_1
+  - openjdk=8.0.152=h46b5887_1
+  - openssl=1.0.2p=h470a237_0
+  - perl-threaded=5.22.0=10
+  - perl-vcftools-vcf=0.953=3
+  - pip=18.1=py27_1000
+  - python=2.7.15=h33da82c_1
+  - readline=7.0=haf1bffa_1
+  - samtools=1.9=h8ee4bcc_1
+  - setuptools=40.4.3=py27_0
+  - sqlite=3.25.2=hb1c47c0_0
+  - tk=8.6.8=ha92aebf_0
+  - varscan=2.4.3=1
+  - vcflib=1.0.0_rc1=0
+  - vcftools=0.1.14=5
+  - wheel=0.32.1=py27_0
+  - xz=5.2.4=h470a237_1
+  - zlib=1.2.11=h470a237_3
+prefix: /bioinfo/guests/nriddifo/miniconda2/envs/varscan
+
