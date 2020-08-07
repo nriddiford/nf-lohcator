@@ -37,6 +37,28 @@ docker build --tag nriviera/bwa-nf-test:test1.0 .
 
 docker push nriviera/bwa-nf-test:test1.0
 
+# Singularity
+
+### Build Singulairt from docker image
+<!-- docker images
+docker save <IMAGE ID> -o lolcow.tar -->
+singularity build bwa-nf-test.sif docker://nriviera/bwa-nf-test
+
+#### or (?)
+singularity pull docker://nriviera/bwa-nf-test
+
+### Run a command from container
+singularity exec bwa-nf-test.sif multiqc
+
+### Enter the container
+singularity shell bwa-nf-test.sif
+
+
+
+
+
+
+
 
 
 # resume run from cached results
