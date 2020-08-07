@@ -6,7 +6,19 @@ channels:
   - conda-forge
 dependencies:
   - bwa=0.7.17=h2573ce8_7
+  - ca-certificates=2020.6.24=0
+  - curl=7.71.1=hb0a8c7a_1
+  - krb5=1.18.2=h75d18d8_0
+  - libcurl=7.71.1=h8a08a2b_1
+  - libcxx=10.0.0=1
+  - libedit=3.1.20191231=h1de35cc_1
+  - libssh2=1.9.0=ha12b0ac_1
+  - ncurses=6.2=h0a44026_1
+  - openssl=1.1.1g=h1de35cc_0
   - perl=5.26.2=h4e221da_0
+  - samblaster=0.1.26=ha1b3eb9_0
+  - samtools=1.4.1=0
+  - xz=5.2.5=h1de35cc_0
   - zlib=1.2.11=h1de35cc_3
 prefix: /Users/Nick_curie/miniconda2/envs/bwa
 
