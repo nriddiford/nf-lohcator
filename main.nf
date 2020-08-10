@@ -13,10 +13,6 @@ log.info """\
 
 
 process index {
-    // beforeScript """
-    // export PATH="/bioinfo/guests/nriddifo/miniconda2/bin:\${PATH}"
-    // source activate nf-align
-    // """
 
     label 'bwa'
 
