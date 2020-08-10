@@ -49,10 +49,8 @@ process align {
     file '*.bam' into bam_ch
 
     """
-    bwa mem -t $task.cpus $genome ${reads[0]} ${reads[1]} | \
-        samblaster --addMateTags --removeDups | \
-        samtools sort - | \
-        samtools view -Sb - > ${sample_id}.bam
+    #bwa mem $genome ${reads[0]} ${reads[1]} > ${sample_id}.bam
+    bwa mem -t $task.cpus $genome ${reads[0]} ${reads[1]} | samblaster --addMateTags --removeDups | samtools sort - | samtools view -Sb - > ${sample_id}.bam
     """
 }
 
