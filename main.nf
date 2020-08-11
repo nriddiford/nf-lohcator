@@ -46,11 +46,14 @@ process align {
     tuple sample_id, path(reads) from reads_ch1
 
     output:
-    file '*.bam' into bam_ch
+    file '*.RG.bam' into bam_ch
 
     """
     #bwa mem $genome ${reads[0]} ${reads[1]} > ${sample_id}.bam
     bwa mem -t $task.cpus $genome ${reads[0]} ${reads[1]} | samblaster --addMateTags --removeDups | samtools sort - | samtools view -Sb - > ${sample_id}.bam
+    #picard AddOrReplaceReadGroups INPUT=${sample_id}.bam OUTPUT=${sample_id}.RG.bam VALIDATION_STRINGENCY=LENIENT RGID=${sample_id} RGLB=HUM RGPL=illumina RGPU=1 RGSM=${sample_id}
+    picard AddOrReplaceReadGroups -INPUT ${sample_id}.bam -OUTPUT ${sample_id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${sample_id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${sample_id}
+    samtools index ${sample_id}.RG.bam
     """
 }
 
