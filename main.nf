@@ -12,6 +12,8 @@ log.info """\
 .stripIndent()
 
 
+ch_multiqc_config = file("$baseDir/assets/multiqc_config.yaml", checkIfExists: true)
+
 process index {
 
     label 'bwa'
@@ -47,8 +49,9 @@ process align {
     tuple sample_id, path(reads) from reads_ch1
 
     output:
-    file '*.RG.bam' into bam_ch
+    tuple sample_id, "${sample_id}.RG.bam" into bam_ch
 
+    script:
     """
     bwa mem -t $task.cpus $genome ${reads[0]} ${reads[1]} | samblaster --addMateTags --removeDups | samtools sort - | samtools view -Sb - > ${sample_id}.bam
     picard AddOrReplaceReadGroups -INPUT ${sample_id}.bam -OUTPUT ${sample_id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${sample_id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${sample_id}
@@ -75,6 +78,25 @@ process fastqc {
     """
 }
 
+process bamstats {
+
+  label 'bamtools'
+  tag "bamtools stats on $sample_id"
+  echo true
+
+  input:
+  tuple sample_id, file(bam) from bam_ch
+
+  output:
+  path "${sample_id}.stats" into bamstats_ch
+
+  script:
+  """
+  bamtools stats -in $bam > ${sample_id}.stats
+  """
+
+}
+
 
 process multiqc {
 
@@ -82,14 +104,16 @@ process multiqc {
     label 'fastqc'
 
     input:
+    file (multiqc_config) from ch_multiqc_config
     path '*' from fastqc_ch.collect()
+    path '*' from bamstats_ch.collect()
 
     output:
     path 'multiqc_report.html' into ch_multiqc_report
 
     script:
     """
-    multiqc .
+    multiqc --config $multiqc_config .
     """
 }
 
