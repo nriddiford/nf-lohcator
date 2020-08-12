@@ -1,0 +1,5 @@
+name: bamtools
+channels:
+  - bioconda
+dependencies:
+  - bioconda::bamtools=2.5.1

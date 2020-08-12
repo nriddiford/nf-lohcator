@@ -1,0 +1,8 @@
+name: bwa
+channels:
+  - bioconda
+dependencies:
+  - bioconda::bwa=0.7.17
+  - bioconda::samblaster=0.1.26
+  - bioconda::samtools=1.9
+  - bioconda::picard=2.23.3
