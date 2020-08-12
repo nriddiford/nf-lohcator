@@ -61,10 +61,13 @@ process align {
 
 process pileup {
 
-  label 'pileup'
-  tag "pileup on $sample_id"
+  label 'varscan'
+  tag "$sample_id"
+
+  echo true
 
   input:
+  path genome from params.genome
   tuple sample_id, file(bam) from bam_ch
 
   // output:
@@ -72,7 +75,7 @@ process pileup {
 
   script:
   """
-  echo varscan $bam
+  echo samtools mpileup -C50 -q 1 -f $genome normal tumour $bam > ${sample_id}.pileup
   """
 
 }
@@ -80,7 +83,7 @@ process pileup {
 process fastqc {
 
     label 'fastqc'
-    tag "FASTQC on $sample_id"
+    tag "$sample_id"
 
     input:
     tuple sample_id, path(reads) from reads_ch2
@@ -99,7 +102,7 @@ process fastqc {
 process bamstats {
 
   label 'bamtools'
-  tag "bamtools stats on $sample_id"
+  tag "$sample_id"
 
   input:
   tuple sample_id, file(bam) from bamstats_in_ch
@@ -117,7 +120,7 @@ process bamstats {
 
 process multiqc {
 
-    publishDir params.outputDir, mode: 'copy'
+    publishDir "$params.outputDir", mode: 'copy'
     label 'fastqc'
 
     input:
