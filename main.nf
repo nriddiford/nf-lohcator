@@ -31,12 +31,8 @@ process index {
 
 Channel
     .fromFilePairs(params.reads, checkIfExists: true)
-    // .map{ it.replaceAll(/.dwnsamp/, "dd") }
-    // .flatMap { it -> [ sample_id: it[0].toString().split('\\.')​​​​[0], reads: it[1]] }
-    .view{ it[0].split('\\.')[0] }
-
-    // .map{ file -> file.toString().split('\\.')​​​​[0] }
-    // .into{ reads_ch1; reads_ch2 }
+    .map { it -> [ it[0].split('\\.')[0], it[1] ] }
+    .into{ reads_ch1; reads_ch2 }
 
 
 process align {
@@ -54,7 +50,6 @@ process align {
     file '*.RG.bam' into bam_ch
 
     """
-    #sample=${sample_id}.toString().replace()
     bwa mem -t $task.cpus $genome ${reads[0]} ${reads[1]} | samblaster --addMateTags --removeDups | samtools sort - | samtools view -Sb - > ${sample_id}.bam
     picard AddOrReplaceReadGroups -INPUT ${sample_id}.bam -OUTPUT ${sample_id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${sample_id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${sample_id}
     samtools index ${sample_id}.RG.bam
