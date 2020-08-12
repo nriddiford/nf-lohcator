@@ -6,5 +6,5 @@ results/
 tests/
 testing/
 *.pyc
-*.html*
+*/.html*
 trace*
