@@ -75,7 +75,7 @@ process pileup {
 
   script:
   """
-  echo samtools mpileup -C50 -q 1 -f $genome normal tumour $bam > ${sample_id}.pileup
+  echo samtools mpileup -C50 -q 1 -f $genome normal tumour > ${sample_id}.pileup
   """
 
 }
