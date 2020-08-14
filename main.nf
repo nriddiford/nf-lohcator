@@ -33,7 +33,19 @@ process trimmomatic {
 
     script:
     """
-    echo your_command --sample $sample_id --group $group --tissue $tissue --reads $r1 $r2
+    echo trimmomatic PE \
+        -threads 8 \
+        -phred33 \
+        $r1 $r2 \
+        ${sample_id}.forward.fq.gz \
+        ${sample_id}.unpaired_1.fq.gz \
+        ${sample_id}.reverse.fq.gz \
+        ${sample_id}.unpaired_2.fq.gz \
+        ILLUMINACLIP:__params.adapters__:2:30:10 \
+        LEADING:3 \
+        TRAILING:3 \
+        SLIDINGWINDOW:4:15 \
+        MINLEN:30
     """
 }
 
