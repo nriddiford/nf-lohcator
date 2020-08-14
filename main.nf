@@ -13,6 +13,31 @@ log.info """\
 
 ch_multiqc_config = file("$baseDir/assets/multiqc_config.yaml", checkIfExists: true)
 
+params.samplePlan = 'sample_plan.csv'
+
+Channel
+    .fromPath(params.samplePlan)
+    .splitCsv(header:true)
+    .map{ row -> tuple(row.sample_id, row.group, row.tissue, file(row.r1), file(row.r2)) }
+    .set{ raw_reads_ch }
+
+
+process trimmomatic {
+    label 'trimmomatic'
+    tag "$sample_id"
+    publishDir "$params.outputDir/processed_reads"
+    echo true
+
+    input:
+    set sample_id, group, tissue, file(r1), file(r2) from raw_reads_ch
+
+    script:
+    """
+    echo your_command --sample $sample_id --group $group --tissue $tissue --reads $r1 $r2
+    """
+}
+
+
 process index {
 
     label 'bwa'
