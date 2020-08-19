@@ -13,7 +13,6 @@ log.info """\
 
 ch_multiqc_config = file("$baseDir/assets/multiqc_config.yaml", checkIfExists: true)
 
-params.samplePlan = 'sample_plan.csv'
 
 Channel
     .fromPath(params.samplePlan)
@@ -31,17 +30,20 @@ process trimmomatic {
     input:
     set sample_id, group, tissue, file(r1), file(r2) from raw_reads_ch
 
+    output:
+    tuple sample_id, "${sample_id}.*.fq.gz" into trimmed_reads_ch
+
     script:
     """
-    echo trimmomatic PE \
+    trimmomatic PE \
         -threads 8 \
         -phred33 \
         $r1 $r2 \
         ${sample_id}.forward.fq.gz \
-        ${sample_id}.unpaired_1.fq.gz \
+        ${sample_id}.unpaired_1.fastq.gz \
         ${sample_id}.reverse.fq.gz \
-        ${sample_id}.unpaired_2.fq.gz \
-        ILLUMINACLIP:__params.adapters__:2:30:10 \
+        ${sample_id}.unpaired_2.fastq.gz \
+        ILLUMINACLIP:$params.adapters:2:30:10 \
         LEADING:3 \
         TRAILING:3 \
         SLIDINGWINDOW:4:15 \
@@ -49,6 +51,8 @@ process trimmomatic {
     """
 }
 
+trimmed_reads_ch
+  .into{ reads_ch1; reads_ch2 }
 
 process index {
 
