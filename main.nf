@@ -71,10 +71,10 @@ process index {
     """
 }
 
-Channel
-    .fromFilePairs(params.reads, checkIfExists: true)
-    .map { it -> [ it[0].split('\\.')[0], it[1] ] }
-    .into{ reads_ch1; reads_ch2 }
+// Channel
+//     .fromFilePairs(params.reads, checkIfExists: true)
+//     .map { it -> [ it[0].split('\\.')[0], it[1] ] }
+//     .into{ reads_ch1; reads_ch2 }
 
 
 process align {
