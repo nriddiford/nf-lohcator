@@ -79,6 +79,8 @@ process index {
 
 process align {
 
+    label 'medCpu'
+    label 'medMem'
     label 'bwa'
     tag "$sample_id"
     publishDir "$params.outputDir/bam"
