@@ -18,7 +18,13 @@ Channel
     .fromPath(params.samplePlan)
     .splitCsv(header:true)
     .map{ row -> tuple(row.sample_id, row.group, row.tissue, file(row.r1), file(row.r2)) }
-    .set{ raw_reads_ch }
+    .into{ raw_reads_ch1; raw_reads_ch2  }
+
+Channel
+    .fromPath(params.sampleDescription)
+    .splitCsv(header:true)
+    .map{ row -> tuple(row.tumour_id, row.normal_id) }
+    .set{ tumour_normal_mappings_ch }
 
 
 process trimmomatic {
@@ -28,7 +34,7 @@ process trimmomatic {
     echo true
 
     input:
-    set sample_id, group, tissue, file(r1), file(r2) from raw_reads_ch
+    set sample_id, group, tissue, file(r1), file(r2) from raw_reads_ch1
 
     output:
     tuple sample_id, "${sample_id}.*.fq.gz" into trimmed_reads_ch
@@ -84,22 +90,32 @@ process align {
     label 'bwa'
     tag "$sample_id"
     publishDir "$params.outputDir/bam"
+    echo true
 
     input:
     path genome from params.genome
     file '*' from bwa_index_ch
+    tuple tumour_id, normal_id from tumour_normal_mappings_ch
     tuple sample_id, path(reads) from reads_ch1
 
     output:
-    tuple sample_id, "${sample_id}.RG.bam" into bam_ch
-    tuple sample_id, "${sample_id}.RG.bam" into bamstats_in_ch
+    tuple sample_id, "${id}.RG.bam" into bam_ch
+    tuple sample_id, "${id}.RG.bam" into bamstats_in_ch
 
     script:
-    """
-    bwa mem -t $task.cpus $genome ${reads[0]} ${reads[1]} | samblaster --addMateTags --removeDups | samtools sort - | samtools view -Sb - > ${sample_id}.bam
-    picard AddOrReplaceReadGroups -INPUT ${sample_id}.bam -OUTPUT ${sample_id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${sample_id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${sample_id}
-    samtools index ${sample_id}.RG.bam
-    """
+    if( sample_id == tumour_id )
+        id = sample_id + '_tumour'
+    else if( sample_id == normal_id )
+        """
+        bwa mem -t $task.cpus $genome ${reads[0]} ${reads[1]} | samblaster --addMateTags --removeDups | samtools sort - | samtools view -Sb - > ${id}.bam
+        picard AddOrReplaceReadGroups -INPUT ${id}.bam -OUTPUT ${id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${id}
+        samtools index ${id}.RG.bam
+        echo $sample_id = $id
+        """
+    else
+        """
+        echo some error $sample_id
+        """
 }
 
 process pileup {
@@ -111,6 +127,7 @@ process pileup {
 
   input:
   path genome from params.genome
+  set sample_id, group, tissue, file(r1), file(r2) from raw_reads_ch2
   tuple sample_id, file(bam) from bam_ch
 
   // output:
@@ -118,7 +135,7 @@ process pileup {
 
   script:
   """
-  echo samtools mpileup -C50 -q 1 -f $genome normal tumour > ${sample_id}.pileup
+  echo samtools mpileup -C50 -q 1 -f $genome $tissue $group > ${sample_id}.pileup
   """
 
 }
