@@ -1,3 +1,3 @@
 sample_id,group,tissue,r1,r2
-HUM-1,HUM,tumour,data/HUM-1_R1.NoAdaptPR_test.fastq.gz,data/HUM-1_R2.NoAdaptPR_test.fastq.gz
-HUM-3,HUM,normal,data/HUM-3_R1.NoAdaptPR_test.fastq.gz,data/HUM-3_R2.NoAdaptPR_test.fastq.gz
+HUM-1,HUM,tumour,data/HUM-1_R1.NoAdaptPR_dwnsmp.fastq.gz,data/HUM-1_R2.NoAdaptPR_dwnsmp.fastq.gz
+HUM-3,HUM,normal,data/HUM-3_R1.NoAdaptPR_dwnsmp.fastq.gz,data/HUM-3_R2.NoAdaptPR_dwnsmp.fastq.gz
