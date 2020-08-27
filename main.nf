@@ -13,19 +13,37 @@ log.info """\
 
 ch_multiqc_config = file("$baseDir/assets/multiqc_config.yaml", checkIfExists: true)
 
-
+// Get unprocessed reads from params.samplePlan
 Channel
     .fromPath(params.samplePlan)
     .splitCsv(header:true)
     .map{ row -> tuple(row.sample_id, row.group, row.tissue, file(row.r1), file(row.r2)) }
     .into{ raw_reads_ch1; raw_reads_ch2  }
 
+
+// Channel
+//     .fromPath(params.sampleDescription)
+//     .splitCsv(header:true)
+//     .map{ row -> tuple(row.tumour_id, row.normal_id) }
+//     .into{ tumour_normal_mappings_ch; test_ch }
+
+// tumours = Channel.create()
+// normals = Channel.create()
+//
+// Channel
+//     .fromPath(params.sampleDescription)
+//     .splitCsv(header:true)
+//     .map{ row -> tuple(row.tumour_id, row.normal_id) }
+//     .separate( tumours, normals )
+
+// Get tumour normal pairings from params.sampleDescription
 Channel
     .fromPath(params.sampleDescription)
     .splitCsv(header:true)
-    .map{ row -> tuple(row.tumour_id, row.normal_id) }
-    .set{ tumour_normal_mappings_ch }
+    .flatMap{ row -> tuple(tumour: row.tumour_id, normal:row.normal_id) }
+    .into{ tumour_normal_mappings_ch; test_ch }
 
+test_ch.view()
 
 process trimmomatic {
     label 'trimmomatic'
@@ -95,28 +113,20 @@ process align {
     input:
     path genome from params.genome
     file '*' from bwa_index_ch
-    tuple tumour_id, normal_id from tumour_normal_mappings_ch
     tuple sample_id, path(reads) from reads_ch1
 
     output:
-    tuple sample_id, "${id}.RG.bam" into bam_ch
-    tuple sample_id, "${id}.RG.bam" into bamstats_in_ch
+    tuple sample_id, "${sample_id}.RG.bam" into bam_ch
+    tuple sample_id, "${sample_id}.RG.bam" into bamstats_in_ch
 
     script:
-    if( sample_id == tumour_id )
-        id = sample_id + '_tumour'
-    else if( sample_id == normal_id )
-        """
-        bwa mem -t $task.cpus $genome ${reads[0]} ${reads[1]} | samblaster --addMateTags --removeDups | samtools sort - | samtools view -Sb - > ${id}.bam
-        picard AddOrReplaceReadGroups -INPUT ${id}.bam -OUTPUT ${id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${id}
-        samtools index ${id}.RG.bam
-        echo $sample_id = $id
-        """
-    else
-        """
-        echo some error $sample_id
-        """
+    """
+    bwa mem -t $task.cpus $genome ${reads[0]} ${reads[1]} | samblaster --addMateTags --removeDups | samtools sort - | samtools view -Sb - > ${sample_id}.bam
+    picard AddOrReplaceReadGroups -INPUT ${sample_id}.bam -OUTPUT ${sample_id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${sample_id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${sample_id}
+    samtools index ${sample_id}.RG.bam
+    """
 }
+
 
 process pileup {
 
@@ -129,11 +139,14 @@ process pileup {
   path genome from params.genome
   set sample_id, group, tissue, file(r1), file(r2) from raw_reads_ch2
   tuple sample_id, file(bam) from bam_ch
+  tuple tumour_id, normal_id from tumour_normal_mappings_ch
 
   // output:
   // path "${sample_id}.stats" into bamstats_ch
 
   script:
+  println "$tumour_id, $normal_id"
+
   """
   echo samtools mpileup -C50 -q 1 -f $genome $tissue $group > ${sample_id}.pileup
   """
