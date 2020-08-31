@@ -164,7 +164,7 @@ process align_t {
     // tuple tumour_id, normal_id from tumour_normal_mappings_ch.view()
 
     output:
-    tuple sample_id, tumour_id, "${sample_id}.bam" into (t_bam_ch, t_bamstats_in_ch, t_bam_test)
+    tuple sample_id, tumour_id, "${sample_id}.bam" into (t_bam_ch, t_bamstats_in_ch)
 
     script:
     """
@@ -189,7 +189,7 @@ process align_n {
     // tuple tumour_id, normal_id from tumour_normal_mappings_ch.view()
 
     output:
-    tuple sample_id, tumour_id, "${sample_id}.bam" into (n_bam_ch, n_bamstats_in_ch, n_bam_test)
+    tuple sample_id, tumour_id, "${sample_id}.bam" into (n_bam_ch, n_bamstats_in_ch)
 
     script:
     """
@@ -199,9 +199,13 @@ process align_n {
     """
 }
 
-t_bam_test
-  .join(n_bam_test, by:[1])
+t_bam_ch
+  .join(n_bam_ch, by:[1])
   .into{ tn_pileup; tn_varscan }
+
+t_bamstats_in_ch
+  .concat(n_bamstats_in_ch)
+  .set{ bamstats_in_ch }
 
 process pileup {
 
@@ -220,14 +224,11 @@ process pileup {
   // when:
   // sample_id.contains(tumour_id)
   script:
+  println "samtools mpileup -C50 -q 1 -f $genome $normal_bam $tumor_bam > ${tumour_id}.pileup"
+
   """
-  echo here $tumour_id + $normal_id
+  echo samtools mpileup -C50 -q 1 -f $genome $normal_bam $tumor_bam > ${tumour_id}.pileup
   """
-  // // println "samtools mpileup -C50 -q 1 -f $genome $normal_id $tumour_id > ${sample_id}.pileup"
-  // if(sample_id == tumour_id)
-  //   """
-  //   samtools mpileup -C50 -q 1 -f $genome ${normal_id}.RG.bam ${tumour_id}.RG.bam > ${sample_id}.pileup
-  //   """
 }
 
 // pileup_ch.view()
@@ -251,43 +252,42 @@ process fastqc {
 }
 
 
-// process bamstats {
-//
-//   label 'bamtools'
-//   tag "$sample_id"
-//
-//   input:
-//   tuple sample_id, file(bam) from bamstats_in_ch
-//
-//   output:
-//   path "${sample_id}.stats" into bamstats_ch
-//
-//   script:
-//   """
-//   bamtools stats -in $bam > ${sample_id}.stats
-//   """
-//
-// }
-//
-//
-// process multiqc {
-//
-//     publishDir "$params.outputDir", mode: 'copy'
-//     label 'fastqc'
-//
-//     input:
-//     file (multiqc_config) from ch_multiqc_config
-//     path '*' from fastqc_ch.collect()
-//     path '*' from bamstats_ch.collect()
-//
-//     output:
-//     path 'multiqc_report.html' into ch_multiqc_report
-//
-//     script:
-//     """
-//     multiqc --config $multiqc_config .
-//     """
-// }
+process bamstats {
+
+  label 'bamtools'
+  tag "$sample_id"
+
+  input:
+  tuple sample_id, _, file(bam) from bamstats_in_ch
+
+  output:
+  path "${sample_id}.stats" into bamstats_ch
+
+  script:
+  """
+  bamtools stats -in $bam > ${sample_id}.stats
+  """
+
+}
+
+process multiqc {
+
+    publishDir "$params.outputDir", mode: 'copy'
+    label 'fastqc'
+
+    input:
+    file (multiqc_config) from ch_multiqc_config
+    path '*' from fastqc_ch.collect()
+    path '*' from bamstats_ch.collect()
+
+    output:
+    path 'multiqc_report.html' into ch_multiqc_report
+
+    script:
+    """
+    multiqc --config $multiqc_config .
+    """
+}
 
 /********************************
  * Header log info
