@@ -14,12 +14,21 @@ log.info """\
 ch_multiqc_config = file("$baseDir/assets/multiqc_config.yaml", checkIfExists: true)
 
 // Get unprocessed reads from params.samplePlan
-Channel
-    .fromPath(params.samplePlan)
-    .splitCsv(header:true)
-    .map{ row -> tuple(row.sample_id, row.group, row.tissue, file(row.r1), file(row.r2)) }
-    .into{ raw_reads_ch1; raw_reads_ch2  }
+// Channel
+//     .fromPath(params.samplePlan)
+//     .splitCsv(header:true)
+//     .map{ row -> tuple(row.sample_id, row.group, row.tissue, file(row.r1), file(row.r2)) }
+//     .into{ raw_reads_ch1; raw_reads_ch2  }
 
+
+Channel
+    .fromPath("$baseDir/sample_plan_local2.csv")
+    .splitCsv(header:true)
+    .map{ row -> tuple(
+      row.tumour_id, file(row.tr1), file(row.tr2),
+      row.normal_id, file(row.nr1), file(row.nr2)
+      )}
+    .into{ raw_reads_normal_ch; raw_reads_tumour_ch; raw_reads_test }
 
 // Channel
 //     .fromPath(params.sampleDescription)
@@ -37,27 +46,30 @@ Channel
 //     .separate( tumours, normals )
 
 // Get tumour normal pairings from params.sampleDescription
-Channel
-    .fromPath(params.sampleDescription)
-    .splitCsv(header:true)
-    .flatMap{ row -> tuple(tumour: row.tumour_id, normal:row.normal_id) }
-    .into{ tumour_normal_mappings_ch; test_ch }
+// Channel
+//     .fromPath(params.sampleDescription)
+//     .splitCsv(header:true)
+//     .flatMap{ row -> tuple(tumour: row.tumour_id, normal:row.normal_id) }
+//     .into{ tumour_normal_mappings_ch; test_ch }
 
-test_ch.view()
+// test_ch.view()
 
-process trimmomatic {
+process n_trimmomatic {
     label 'trimmomatic'
-    tag "$sample_id"
+    tag "$normal_id"
     publishDir "$params.outputDir/processed_reads"
     echo true
 
     input:
-    set sample_id, group, tissue, file(r1), file(r2) from raw_reads_ch1
+    // set sample_id, group, tissue, file(r1), file(r2) from raw_reads_ch1
+    set tumour_id, _, _, normal_id, file(r1), file(r2) from raw_reads_normal_ch
 
     output:
-    tuple sample_id, "${sample_id}.*.fq.gz" into trimmed_reads_ch
+    tuple sample_id, tumour_id, "${sample_id}.*.fq.gz" into trimmed_reads_normal_ch
 
     script:
+    // sample_id = tumour_id + '_normal'
+    sample_id = normal_id
     """
     trimmomatic PE \
         -threads 8 \
@@ -75,11 +87,47 @@ process trimmomatic {
     """
 }
 
-trimmed_reads_ch
-  .into{ reads_ch1; reads_ch2 }
+process t_trimmomatic {
+    label 'trimmomatic'
+    tag "$tumour_id"
+    publishDir "$params.outputDir/processed_reads"
+    echo true
+
+    input:
+    // set sample_id, group, tissue, file(r1), file(r2) from raw_reads_ch1
+    set tumour_id, file(r1), file(r2), _, _, _ from raw_reads_tumour_ch
+
+    output:
+    tuple sample_id, tumour_id, "${sample_id}.*.fq.gz" into trimmed_reads_tumour_ch
+
+    script:
+    // sample_id = tumour_id + '_tumour'
+    sample_id = tumour_id
+    """
+    trimmomatic PE \
+        -threads 8 \
+        -phred33 \
+        $r1 $r2 \
+        ${sample_id}.forward.fq.gz \
+        ${sample_id}.unpaired_1.fastq.gz \
+        ${sample_id}.reverse.fq.gz \
+        ${sample_id}.unpaired_2.fastq.gz \
+        ILLUMINACLIP:$params.adapters:2:30:10 \
+        LEADING:3 \
+        TRAILING:3 \
+        SLIDINGWINDOW:4:15 \
+        MINLEN:30
+    """
+}
+
+trimmed_reads_normal_ch
+  .into{ n_reads_ch1; n_reads_ch2 }
+
+trimmed_reads_tumour_ch
+  .into{ t_reads_ch1; t_reads_ch2; t_reads_test }
+
 
 process index {
-
     label 'bwa'
 
     input:
@@ -101,8 +149,7 @@ process index {
 //     .into{ reads_ch1; reads_ch2 }
 
 
-process align {
-
+process align_t {
     label 'medCpu'
     label 'medMem'
     label 'bwa'
@@ -113,45 +160,77 @@ process align {
     input:
     path genome from params.genome
     file '*' from bwa_index_ch
-    tuple sample_id, path(reads) from reads_ch1
+    tuple sample_id, tumour_id, path(reads) from t_reads_ch1
+    // tuple tumour_id, normal_id from tumour_normal_mappings_ch.view()
 
     output:
-    tuple sample_id, "${sample_id}.RG.bam" into bam_ch
-    tuple sample_id, "${sample_id}.RG.bam" into bamstats_in_ch
+    tuple sample_id, tumour_id, "${sample_id}.bam" into (t_bam_ch, t_bamstats_in_ch, t_bam_test)
 
     script:
     """
     bwa mem -t $task.cpus $genome ${reads[0]} ${reads[1]} | samblaster --addMateTags --removeDups | samtools sort - | samtools view -Sb - > ${sample_id}.bam
-    picard AddOrReplaceReadGroups -INPUT ${sample_id}.bam -OUTPUT ${sample_id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${sample_id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${sample_id}
-    samtools index ${sample_id}.RG.bam
+    #picard AddOrReplaceReadGroups -INPUT ${sample_id}.bam -OUTPUT ${sample_id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${sample_id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${sample_id}
+    samtools index ${sample_id}.bam
     """
 }
 
+process align_n {
+    label 'medCpu'
+    label 'medMem'
+    label 'bwa'
+    tag "$sample_id"
+    publishDir "$params.outputDir/bam"
+    echo true
+
+    input:
+    path genome from params.genome
+    file '*' from bwa_index_ch
+    tuple sample_id, tumour_id, path(reads) from n_reads_ch1
+    // tuple tumour_id, normal_id from tumour_normal_mappings_ch.view()
+
+    output:
+    tuple sample_id, tumour_id, "${sample_id}.bam" into (n_bam_ch, n_bamstats_in_ch, n_bam_test)
+
+    script:
+    """
+    bwa mem -t $task.cpus $genome ${reads[0]} ${reads[1]} | samblaster --addMateTags --removeDups | samtools sort - | samtools view -Sb - > ${sample_id}.bam
+    #picard AddOrReplaceReadGroups -INPUT ${sample_id}.bam -OUTPUT ${sample_id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${sample_id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${sample_id}
+    samtools index ${sample_id}.bam
+    """
+}
+
+t_bam_test
+  .join(n_bam_test, by:[1])
+  .into{ tn_pileup; tn_varscan }
 
 process pileup {
 
   label 'varscan'
-  tag "$sample_id"
-
+  tag "$tumour_id"
   echo true
 
   input:
   path genome from params.genome
-  set sample_id, group, tissue, file(r1), file(r2) from raw_reads_ch2
-  tuple sample_id, file(bam) from bam_ch
-  tuple tumour_id, normal_id from tumour_normal_mappings_ch
+  tuple tumour_id, _, path(tumor_bam), normal_id, path(normal_bam) from tn_pileup
 
   // output:
-  // path "${sample_id}.stats" into bamstats_ch
+  // tuple tumour_id, "${tumour_id}.pileup" into pileup_ch
+  //
 
+  // when:
+  // sample_id.contains(tumour_id)
   script:
-  println "$tumour_id, $normal_id"
-
   """
-  echo samtools mpileup -C50 -q 1 -f $genome $tissue $group > ${sample_id}.pileup
+  echo here $tumour_id + $normal_id
   """
-
+  // // println "samtools mpileup -C50 -q 1 -f $genome $normal_id $tumour_id > ${sample_id}.pileup"
+  // if(sample_id == tumour_id)
+  //   """
+  //   samtools mpileup -C50 -q 1 -f $genome ${normal_id}.RG.bam ${tumour_id}.RG.bam > ${sample_id}.pileup
+  //   """
 }
+
+// pileup_ch.view()
 
 process fastqc {
 
@@ -159,7 +238,7 @@ process fastqc {
     tag "$sample_id"
 
     input:
-    tuple sample_id, path(reads) from reads_ch2
+    tuple sample_id, pair_id, path(reads) from n_reads_ch2.mix(t_reads_ch2)
 
     output:
     path "fastqc_${sample_id}_logs" into fastqc_ch
@@ -172,43 +251,43 @@ process fastqc {
 }
 
 
-process bamstats {
-
-  label 'bamtools'
-  tag "$sample_id"
-
-  input:
-  tuple sample_id, file(bam) from bamstats_in_ch
-
-  output:
-  path "${sample_id}.stats" into bamstats_ch
-
-  script:
-  """
-  bamtools stats -in $bam > ${sample_id}.stats
-  """
-
-}
-
-
-process multiqc {
-
-    publishDir "$params.outputDir", mode: 'copy'
-    label 'fastqc'
-
-    input:
-    file (multiqc_config) from ch_multiqc_config
-    path '*' from fastqc_ch.collect()
-    path '*' from bamstats_ch.collect()
-
-    output:
-    path 'multiqc_report.html' into ch_multiqc_report
-
-    script:
-    """
-    multiqc --config $multiqc_config .
-    """
-}
+// process bamstats {
+//
+//   label 'bamtools'
+//   tag "$sample_id"
+//
+//   input:
+//   tuple sample_id, file(bam) from bamstats_in_ch
+//
+//   output:
+//   path "${sample_id}.stats" into bamstats_ch
+//
+//   script:
+//   """
+//   bamtools stats -in $bam > ${sample_id}.stats
+//   """
+//
+// }
+//
+//
+// process multiqc {
+//
+//     publishDir "$params.outputDir", mode: 'copy'
+//     label 'fastqc'
+//
+//     input:
+//     file (multiqc_config) from ch_multiqc_config
+//     path '*' from fastqc_ch.collect()
+//     path '*' from bamstats_ch.collect()
+//
+//     output:
+//     path 'multiqc_report.html' into ch_multiqc_report
+//
+//     script:
+//     """
+//     multiqc --config $multiqc_config .
+//     """
+// }
 
 /********************************
  * Header log info
