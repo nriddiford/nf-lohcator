@@ -1,6 +1,5 @@
 params.multiqc = "$baseDir/multiqc"
 
-
 log.info """\
     This is a NEXTFLOW PIPELINE
 
@@ -68,7 +67,6 @@ process n_trimmomatic {
     tuple sample_id, tumour_id, "${sample_id}.*.fq.gz" into trimmed_reads_normal_ch
 
     script:
-    // sample_id = tumour_id + '_normal'
     sample_id = normal_id
     """
     trimmomatic PE \
@@ -101,7 +99,6 @@ process t_trimmomatic {
     tuple sample_id, tumour_id, "${sample_id}.*.fq.gz" into trimmed_reads_tumour_ch
 
     script:
-    // sample_id = tumour_id + '_tumour'
     sample_id = tumour_id
     """
     trimmomatic PE \
@@ -142,11 +139,6 @@ process index {
     bwa index $genome
     """
 }
-
-// Channel
-//     .fromFilePairs(params.reads, checkIfExists: true)
-//     .map { it -> [ it[0].split('\\.')[0], it[1] ] }
-//     .into{ reads_ch1; reads_ch2 }
 
 
 process align_t {
@@ -231,7 +223,7 @@ process pileup {
 
 
 
-
+// Collect stats on various stages
 
 process fastqc {
 
@@ -288,6 +280,8 @@ process multiqc {
     multiqc --config $multiqc_config .
     """
 }
+
+// END processes
 
 workflow.onComplete {
 
