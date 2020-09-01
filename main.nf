@@ -212,8 +212,6 @@ varscan_out_ch.view()
 
 
 
-
-
 // Collect stats on various stages
 
 process fastqc {
