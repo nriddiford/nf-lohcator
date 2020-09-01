@@ -209,7 +209,7 @@ process pileup {
   tuple tumour_id, _, path(tumor_bam), normal_id, path(normal_bam) from tn_pileup
 
   output:
-  tuple tumour_id, "${tumour_id}.pileup" into pileup_ch
+  tuple tumour_id, "${tumour_id}.pileup" into (pileup_ch, pileup_ch1)
 
   script:
   """
@@ -217,7 +217,36 @@ process pileup {
   """
 }
 
+pileup_ch1.view()
 
+process varscan {
+  label 'varscan'
+  tag "$tumour_id"
+  echo true
+
+  input:
+  path genome from params.genome
+  path unmappable_genome from params.unmappable_genome
+  tuple tumour_id, "${tumour_id}.pileup" from pileup_ch
+
+  output:
+  tuple tumour_id, "${tumour_id}.snp", "${tumour_id}.indel" into varscan_out_ch
+
+  script:
+  tumour_purity = 1
+  """
+  varscan somatic ${tumour_id}.pileup \
+    ${tumour_id} \
+    --mpileup 1 \
+    --min-coverage-normal ${params.normal_coverage} \
+    --min-coverage-tumor ${params.tumour_coverage} \
+    --tumor-purity ${tumour_purity} \
+    --strand-filter 1
+  """
+}
+
+
+varscan_out_ch.view()
 
 
 
