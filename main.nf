@@ -12,46 +12,14 @@ log.info """\
 
 ch_multiqc_config = file("$baseDir/assets/multiqc_config.yaml", checkIfExists: true)
 
-// Get unprocessed reads from params.samplePlan
-// Channel
-//     .fromPath(params.samplePlan)
-//     .splitCsv(header:true)
-//     .map{ row -> tuple(row.sample_id, row.group, row.tissue, file(row.r1), file(row.r2)) }
-//     .into{ raw_reads_ch1; raw_reads_ch2  }
-
-
 Channel
-    .fromPath("$baseDir/sample_plan_local2.csv")
+    .fromPath(params.samplePlan)
     .splitCsv(header:true)
     .map{ row -> tuple(
       row.tumour_id, file(row.tr1), file(row.tr2),
       row.normal_id, file(row.nr1), file(row.nr2)
       )}
     .into{ raw_reads_normal_ch; raw_reads_tumour_ch; raw_reads_test }
-
-// Channel
-//     .fromPath(params.sampleDescription)
-//     .splitCsv(header:true)
-//     .map{ row -> tuple(row.tumour_id, row.normal_id) }
-//     .into{ tumour_normal_mappings_ch; test_ch }
-
-// tumours = Channel.create()
-// normals = Channel.create()
-//
-// Channel
-//     .fromPath(params.sampleDescription)
-//     .splitCsv(header:true)
-//     .map{ row -> tuple(row.tumour_id, row.normal_id) }
-//     .separate( tumours, normals )
-
-// Get tumour normal pairings from params.sampleDescription
-// Channel
-//     .fromPath(params.sampleDescription)
-//     .splitCsv(header:true)
-//     .flatMap{ row -> tuple(tumour: row.tumour_id, normal:row.normal_id) }
-//     .into{ tumour_normal_mappings_ch; test_ch }
-
-// test_ch.view()
 
 process n_trimmomatic {
     label 'trimmomatic'
@@ -60,7 +28,6 @@ process n_trimmomatic {
     echo true
 
     input:
-    // set sample_id, group, tissue, file(r1), file(r2) from raw_reads_ch1
     set tumour_id, _, _, normal_id, file(r1), file(r2) from raw_reads_normal_ch
 
     output:
@@ -92,7 +59,6 @@ process t_trimmomatic {
     echo true
 
     input:
-    // set sample_id, group, tissue, file(r1), file(r2) from raw_reads_ch1
     set tumour_id, file(r1), file(r2), _, _, _ from raw_reads_tumour_ch
 
     output:
@@ -153,7 +119,6 @@ process align_t {
     path genome from params.genome
     file '*' from bwa_index_ch
     tuple sample_id, tumour_id, path(reads) from t_reads_ch1
-    // tuple tumour_id, normal_id from tumour_normal_mappings_ch.view()
 
     output:
     tuple sample_id, tumour_id, "${sample_id}.bam" into (t_bam_ch, t_bamstats_in_ch)
@@ -178,7 +143,6 @@ process align_n {
     path genome from params.genome
     file '*' from bwa_index_ch
     tuple sample_id, tumour_id, path(reads) from n_reads_ch1
-    // tuple tumour_id, normal_id from tumour_normal_mappings_ch.view()
 
     output:
     tuple sample_id, tumour_id, "${sample_id}.bam" into (n_bam_ch, n_bamstats_in_ch)
@@ -209,15 +173,13 @@ process pileup {
   tuple tumour_id, _, path(tumor_bam), normal_id, path(normal_bam) from tn_pileup
 
   output:
-  tuple tumour_id, "${tumour_id}.pileup" into (pileup_ch, pileup_ch1)
+  tuple tumour_id, "${tumour_id}.pileup" into pileup_ch
 
   script:
   """
   samtools mpileup -C50 -q 1 -f $genome $normal_bam $tumor_bam > ${tumour_id}.pileup
   """
 }
-
-pileup_ch1.view()
 
 process varscan {
   label 'varscan'
