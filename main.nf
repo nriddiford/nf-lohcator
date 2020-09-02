@@ -204,9 +204,15 @@ process varscan {
     --min-coverage-tumor ${params.tumour_coverage} \
     --tumor-purity ${tumour_purity} \
     --strand-filter 1
+    varscan processSomatic ${tumour_id}.snp
+    varscan processSomatic ${tumour_id}.indel
+
   """
 }
 
+// python $script/VarScan2_format_converter.py $out_dir/high_conf/${output_base}.snp.Somatic.hc > $out_dir/high_conf/${output_base}_snp.Somatic.hc.vcf
+// python $script/VarScan2_format_converter.py $out_dir/indel/${output_base}.indel.Somatic.hc > $out_dir/indel/${output_base}_indel.Somatic.hc.vcf
+// python $script/VarScan2_format_converter.py $out_dir/high_conf/${output_base}.snp.LOH.hc > $out_dir/high_conf/${output_base}_snp.LOH.hc.vcf
 
 varscan_out_ch.view()
 
