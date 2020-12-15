@@ -21,6 +21,7 @@ Channel
       )}
     .into{ raw_reads_normal_ch; raw_reads_tumour_ch; raw_reads_test }
 
+
 process n_trimmomatic {
     label 'trimmomatic'
     tag "$normal_id"

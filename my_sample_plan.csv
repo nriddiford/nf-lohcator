@@ -1,0 +1,4 @@
+tumour_id,tr1,tr2,normal_id,nr1,nr2
+HUM-1,data/HUM-1.dwnsamp.R1.fq.gz,data/HUM-1.dwnsamp.R2.fq.gz,HUM-3,data/HUM-3.dwnsamp.R1.fq.gz,data/HUM-3.dwnsamp.R2.fq.gz
+HUM-4,data/HUM-4.dwnsamp.R1.fq.gz,data/HUM-4.dwnsamp.R2.fq.gz,HUM-6,data/HUM-6.dwnsamp.R1.fq.gz,data/HUM-6.dwnsamp.R2.fq.gz
+HUM-7,data/HUM-7.dwnsamp.R1.fq.gz,data/HUM-7.dwnsamp.R2.fq.gz,HUM-9,data/HUM-9.dwnsamp.R1.fq.gz,data/HUM-9.dwnsamp.R2.fq.gz
