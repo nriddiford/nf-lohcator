@@ -217,7 +217,6 @@ process varscan {
     #vcfintersect ${tumour_id}_indel.Somatic.hc.vcf -b ${params.unmappable_genome} -v > ${tumour_id}_indel.Somatic.hc.filt.vcf
 
     cat ${tumour_id}.snp.*.hc > ${tumour_id}.snp.hc
-
   """
 }
 
