@@ -208,14 +208,17 @@ process varscan {
     varscan processSomatic ${tumour_id}.snp
     varscan processSomatic ${tumour_id}.indel
 
+    python '$baseDir/bin/VarScan2_format_converter.py' ${tumour_id}.snp.Somatic.hc > ${tumour_id}_snp.Somatic.hc.vcf
+    python '$baseDir/bin/VarScan2_format_converter.py' ${tumour_id}.snp.LOH.hc > ${tumour_id}_snp.LOH.hc.vcf
+    python '$baseDir/bin/VarScan2_format_converter.py' ${tumour_id}.indel.Somatic.hc > ${tumour_id}_indel.Somatic.hc.vcf
+
+    vcfintersect ${tumour_id}_snp.Somatic.hc.vcf -b ${params.unmappable_genome} -v > ${tumour_id}_snp.Somatic.hc.filt.vcf
+    vcfintersect ${tumour_id}_snp.LOH.hc.vcf -b ${params.unmappable_genome} -v > ${tumour_id}_snp.LOH.hc.filt.vcf
+    vcfintersect ${tumour_id}_indel.Somatic.hc.vcf -b ${params.unmappable_genome} -v > ${tumour_id}_indel.Somatic.hc.filt.vcf
   """
 }
 
-// python $script/VarScan2_format_converter.py $out_dir/high_conf/${output_base}.snp.Somatic.hc > $out_dir/high_conf/${output_base}_snp.Somatic.hc.vcf
-// python $script/VarScan2_format_converter.py $out_dir/indel/${output_base}.indel.Somatic.hc > $out_dir/indel/${output_base}_indel.Somatic.hc.vcf
-// python $script/VarScan2_format_converter.py $out_dir/high_conf/${output_base}.snp.LOH.hc > $out_dir/high_conf/${output_base}_snp.LOH.hc.vcf
-
-varscan_out_ch.view()
+// varscan_out_ch.view()
 
 
 
