@@ -4,3 +4,4 @@ channels:
 dependencies:
   - bioconda::varscan=2.4.4
   - bioconda::samtools=1.9
+  - bioconda::vcflib=1.0.0_rc2
