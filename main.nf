@@ -196,7 +196,7 @@ process freebayes {
     tuple tumour_id, _, path(tumor_bam), normal_id, path(normal_bam) from tn_freebayes
 
     output:
-    tuple tumour_id, "${tumour_id}_raw.vcf" into freebayes_out_ch
+    tuple tumour_id, "${tumour_id}*.vcf*" into freebayes_out_ch
 
     script:
     """
@@ -209,6 +209,27 @@ process freebayes {
       $tumor_bam \
       $normal_bam \
       -v ${tumour_id}_raw.vcf
+
+    vcfintersect ${tumour_id}_raw.vcf -b ${params.unmappable_genome} -v > ${tumour_id}_mappable.vcf
+
+    vcfallelicprimitives ${tumour_id}_mappable.vcf | \
+      vt decompose_blocksub - | \
+      vt normalize -q -r $genome - | \
+      vcfsamplediff -s VT ${normal_id} ${tumour_id} - | \
+      vcffilter -f "DP > 20" \
+        -f "QUAL > 1 & QUAL / AO > 10" \
+        -f "SAF > 0 & SAR > 0" \
+        -f "RPR > 0 & RPL > 0" \
+        -f "TYPE = snp" > ${tumour_id}_snps_filt.vcf
+
+
+    vcffilter -f "VT = somatic" ${tumour_id}_snps_filt.vcf > ${tumour_id}_freebayes.vcf
+
+    bgzip -f ${tumour_id}_snps_filt.vcf
+    tabix -p vcf ${tumour_id}_snps_filt.vcf.gz
+
+    bgzip -f ${tumour_id}_freebayes.vcf
+    tabix -p vcf ${tumour_id}_freebayes.vcf.gz
 
     """
 
