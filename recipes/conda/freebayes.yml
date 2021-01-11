@@ -4,3 +4,4 @@ channels:
 dependencies:
   - bioconda::freebayes=1.3.2=py27h71bc947_2
   - bioconda::vcflib=1.0.0_rc2
+  - bioconda::vt=0.57721
