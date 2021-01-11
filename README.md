@@ -1,20 +1,10 @@
-# Blast example 
+# Locate LOH in WGS data
 
-A basic Blast pipeline using Nextflow 
+## Install nextflow
 
-[![Build Status](https://travis-ci.org/nextflow-io/blast-example.svg?branch=master)](https://travis-ci.org/nextflow-io/blast-example)
+curl -s https://get.nextflow.io | bash
 
-## Get started 
+# Conda
 
-Install Nextflow 
-
-    curl https://get.nextflow.io | bash 
-
-Run the script 
-
-    nextflow run blast-example -with-docker
-
-## Dependencies 
-
-* Java 8 or later 
-* Docker 1.10 or later 
+# Make sample plan for each sample
+python bin/write_files.py -d /data/kdi_prod/project_result/948/01.00/Analysis/D050 -o sample_plan.csv
