@@ -157,11 +157,14 @@ process align_n {
 
 t_bam_ch
   .join(n_bam_ch, by:[1])
-  .into{ tn_pileup; tn_varscan }
+  .into{ tn_pileup; tn_varscan; tn_freebayes }
 
 t_bamstats_in_ch
   .concat(n_bamstats_in_ch)
   .set{ bamstats_in_ch }
+
+
+// tn_freebayes.view()
 
 
 process pileup {
@@ -181,10 +184,43 @@ process pileup {
   """
 }
 
+process freebayes {
+    label 'freebayes'
+    tag "$tumour_id"
+    echo true
+    publishDir "$params.outputDir/vcf"
+
+    input:
+    path genome from params.genome
+    path unmappable_genome from params.unmappable_genome
+    tuple tumour_id, _, path(tumor_bam), normal_id, path(normal_bam) from tn_freebayes
+
+    output:
+    tuple tumour_id, "${tumour_id}_raw.vcf" into freebayes_out_ch
+
+    script:
+    """
+    echo "Running freebays on ${tumour_id} vs ${normal_id}"
+
+    freebayes -0 -f $genome \
+      --pooled-discrete \
+      --genotype-qualities \
+      --min-coverage 20 \
+      $tumor_bam \
+      $normal_bam \
+      -v ${tumour_id}_raw.vcf
+
+    """
+
+}
+
 process varscan {
   label 'varscan'
   tag "$tumour_id"
   echo true
+  publishDir "$params.outputDir/varscan"
+  publishDir "$params.outputDir/vcf", pattern: "*.vcf"
+
 
   input:
   path genome from params.genome
@@ -192,7 +228,8 @@ process varscan {
   tuple tumour_id, "${tumour_id}.pileup" from pileup_ch
 
   output:
-  tuple tumour_id, "${tumour_id}.snp", "${tumour_id}.indel" into varscan_out_ch
+  tuple tumour_id, "${tumour_id}.snp", "${tumour_id}.indel", "${tumour_id}.*.hc", "${tumour_id}*.vcf" into varscan_out_ch
+
 
   script:
   tumour_purity = 1
