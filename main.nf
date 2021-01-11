@@ -1,10 +1,9 @@
 params.multiqc = "$baseDir/multiqc"
 
 log.info """\
-    This is a NEXTFLOW PIPELINE for running lohcator on matcher tumor normal pairs
+    This is a NEXTFLOW PIPELINE for running lohcator on matched tumor normal pairs
 
     genome: ${params.genome}
-    read directory: ${params.reads}
     outdir: ${params.outputDir}
 
     """
