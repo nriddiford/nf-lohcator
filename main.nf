@@ -121,13 +121,13 @@ process align_t {
     tuple sample_id, tumour_id, path(reads) from t_reads_ch1
 
     output:
-    tuple sample_id, tumour_id, "${sample_id}.bam" into (t_bam_ch, t_bamstats_in_ch)
+    tuple sample_id, tumour_id, "${sample_id}.RG.bam" into (t_bam_ch, t_bamstats_in_ch)
 
     script:
     """
     bwa mem -t $task.cpus $genome ${reads[0]} ${reads[1]} | samblaster --addMateTags --removeDups | samtools sort - | samtools view -Sb - > ${sample_id}.bam
-    #picard AddOrReplaceReadGroups -INPUT ${sample_id}.bam -OUTPUT ${sample_id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${sample_id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${sample_id}
-    samtools index ${sample_id}.bam
+    picard AddOrReplaceReadGroups -INPUT ${sample_id}.bam -OUTPUT ${sample_id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${sample_id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${sample_id}
+    samtools index ${sample_id}.RG.bam
     """
 }
 
@@ -145,13 +145,13 @@ process align_n {
     tuple sample_id, tumour_id, path(reads) from n_reads_ch1
 
     output:
-    tuple sample_id, tumour_id, "${sample_id}.bam" into (n_bam_ch, n_bamstats_in_ch)
+    tuple sample_id, tumour_id, "${sample_id}.RG.bam" into (n_bam_ch, n_bamstats_in_ch)
 
     script:
     """
     bwa mem -t $task.cpus $genome ${reads[0]} ${reads[1]} | samblaster --addMateTags --removeDups | samtools sort - | samtools view -Sb - > ${sample_id}.bam
-    #picard AddOrReplaceReadGroups -INPUT ${sample_id}.bam -OUTPUT ${sample_id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${sample_id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${sample_id}
-    samtools index ${sample_id}.bam
+    picard AddOrReplaceReadGroups -INPUT ${sample_id}.bam -OUTPUT ${sample_id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${sample_id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${sample_id}
+    samtools index ${sample_id}.RG.bam
     """
 }
 
@@ -197,6 +197,7 @@ process freebayes {
 
     output:
     tuple tumour_id, "${tumour_id}*.vcf*" into freebayes_out_ch
+    tuple tumour_id, "${tumour_id}_snps_filt.vcf.gz", "${tumour_id}_snps_filt.vcf.gz.tbi" into freebayes_raw_out_ch
 
     script:
     """
@@ -222,7 +223,6 @@ process freebayes {
         -f "RPR > 0 & RPL > 0" \
         -f "TYPE = snp" > ${tumour_id}_snps_filt.vcf
 
-
     vcffilter -f "VT = somatic" ${tumour_id}_snps_filt.vcf > ${tumour_id}_freebayes.vcf
 
     bgzip -f ${tumour_id}_snps_filt.vcf
@@ -230,10 +230,11 @@ process freebayes {
 
     bgzip -f ${tumour_id}_freebayes.vcf
     tabix -p vcf ${tumour_id}_freebayes.vcf.gz
-
     """
-
 }
+
+// freebayes_raw_out_ch.view()
+
 
 process varscan {
   label 'varscan'
@@ -277,9 +278,33 @@ process varscan {
   """
 }
 
+
+process lohcator {
+    label 'lohcator'
+    tag "$tumour_id"
+    echo true
+    publishDir "$params.outputDir/bed"
+    // publishDir "$params.outputDir/vcf", pattern: "*.vcf"
+
+    input:
+    // tuple tumour_id, "${tumour_id}_snps_filt.vcf.gz", "${tumour_id}_snps_filt.vcf.gz.tbi"  from freebayes_raw_out_ch
+    tuple tumour_id, "${tumour_id}.snp" from varscan_out_ch
+
+    output:
+    tuple tumour_id, "${tumour_id}_LOH_regions.bed" into lohcator_out_ch
+
+    script:
+    """
+    echo Running lohcator $tumour_id for Varscan file ${tumour_id}.snp
+    python $baseDir/bin/lohcator.py \
+        --varscan_file ${tumour_id}.snp \
+        --config $baseDir/data/samples.tsv \
+        --chromosome 'X'
+    """
+}
+
+
 // varscan_out_ch.view()
-
-
 
 // Collect stats on various stages
 
