@@ -1,11 +1,33 @@
 params.multiqc = "$baseDir/multiqc"
 
+c_green = "\033[0;32m";
+c_purple = "\033[0;35m";
+c_red =  "\033[0;31m";
+c_reset = "\033[0m";
+// c_blue = "\e[1;34mLight Blue Text\e[0m"
+
+// BLUE='\033[0;34m'
+c_blue='\033[0;34m'
+
 log.info """\
-    This is a NEXTFLOW PIPELINE for running lohcator on matched tumor normal pairs
+    This is a NEXTFLOW PIPELINE for detecting LOH in matched tumour normal pairs.
 
-    genome: ${params.genome}
-    outdir: ${params.outputDir}
+    Running with the following options:
+    --- config ---
+    *   --samplePlan: ${c_blue}${params.samplePlan} ${c_reset}
+    *   --outdir: ${c_blue}${params.outputDir} ${c_reset}
+    *   --condaCacheDir ${c_blue}${params.condaCacheDir} ${c_reset}
 
+    --- Trimmomatic (v0.39) ---
+    *   --adapters [ILLUMINACLIP:]  ${c_blue}${params.adapters} ${c_reset}
+
+    --- Bwa (v0.7.17) ---
+    *   --genome  ${c_blue}${params.genome} ${c_reset}
+
+    --- Varscan (v2.4.4) ---
+    --varscan_normal_coverage [--min-coverage-normal] ${params.varscan_normal_coverage}
+    --varscan_tumour_coverage [--min-coverage-tumor] ${params.varscan_tumour_coverage}
+    --varscan_tumour_purity [--tumor-purity] ${params.varscan_tumour_purity}
     """
 .stripIndent()
 
@@ -254,14 +276,13 @@ process varscan {
 
 
   script:
-  tumour_purity = 1
   """
   varscan somatic ${tumour_id}.pileup \
     ${tumour_id} \
     --mpileup 1 \
-    --min-coverage-normal ${params.normal_coverage} \
-    --min-coverage-tumor ${params.tumour_coverage} \
-    --tumor-purity ${tumour_purity} \
+    --min-coverage-normal ${params.varscan_normal_coverage} \
+    --min-coverage-tumor ${params.varscan_tumour_coverage} \
+    --tumor-purity ${params.varscan_tumour_purity} \
     --strand-filter 1
     varscan processSomatic ${tumour_id}.snp
     varscan processSomatic ${tumour_id}.indel
@@ -380,9 +401,9 @@ workflow.onComplete {
     }
 
     if (workflow.success) {
-        log.info "-${c_purple}[nf-bwa-mem]${c_green} Pipeline completed successfully${c_reset}-"
+        log.info "-${c_purple}[nf-lohcator]${c_green} Pipeline completed successfully${c_reset}-"
     } else {
-        log.info "-${c_purple}[nf-bwa-mem]${c_red} Pipeline completed with errors${c_reset}-"
+        log.info "-${c_purple}[nf-lohcator]${c_red} Pipeline completed with errors${c_reset}-"
     }
 
 }
