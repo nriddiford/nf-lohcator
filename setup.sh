@@ -43,3 +43,8 @@ check_installaton "conda" "install_miniconda > log/miniconda_install.log 2>&1"
 
 
 check_installaton "nextflow" "install_nextflow > log/nextflow_install.log 2>&1"
+
+
+# /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+
+# brew install wget
