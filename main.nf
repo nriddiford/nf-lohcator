@@ -156,7 +156,9 @@ process align_t {
     script:
     """
     bwa mem -t $task.cpus $genome ${reads[0]} ${reads[1]} | samblaster --addMateTags --removeDups | samtools sort - | samtools view -Sb - > ${sample_id}.bam
-    picard AddOrReplaceReadGroups -INPUT ${sample_id}.bam -OUTPUT ${sample_id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${sample_id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${sample_id}
+    #picard AddOrReplaceReadGroups -INPUT ${sample_id}.bam -OUTPUT ${sample_id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${sample_id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${sample_id}
+    picard AddOrReplaceReadGroups --INPUT ${sample_id}.bam --OUTPUT ${sample_id}.RG.bam --RGID ${sample_id} --RGLB HUM --RGPL illumina --RGPU 1 --RGSM ${sample_id}
+
     samtools index ${sample_id}.RG.bam
     """
 }
@@ -180,7 +182,8 @@ process align_n {
     script:
     """
     bwa mem -t $task.cpus $genome ${reads[0]} ${reads[1]} | samblaster --addMateTags --removeDups | samtools sort - | samtools view -Sb - > ${sample_id}.bam
-    picard AddOrReplaceReadGroups -INPUT ${sample_id}.bam -OUTPUT ${sample_id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${sample_id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${sample_id}
+    #picard AddOrReplaceReadGroups -INPUT ${sample_id}.bam -OUTPUT ${sample_id}.RG.bam -VALIDATION_STRINGENCY LENIENT -RGID ${sample_id} -RGLB HUM -RGPL illumina -RGPU 1 -RGSM ${sample_id}
+    picard AddOrReplaceReadGroups --INPUT ${sample_id}.bam --OUTPUT ${sample_id}.RG.bam --RGID ${sample_id} --RGLB HUM --RGPL illumina --RGPU 1 --RGSM ${sample_id}
     samtools index ${sample_id}.RG.bam
     """
 }
