@@ -11,11 +11,11 @@ def find_normal(options):
 
     samples = config['sample'].tolist()
     it = iter(samples)
-    
+
     s = {}
-    for x in it: 
+    for x in it:
         s[x] = next(it)
- 
+
     return s
 
 
@@ -30,11 +30,10 @@ def write_plan(options):
         r1 = ''
         for file in sorted(os.listdir(options.dir)):
             if file.endswith(options.ext):
-                sample = str(file.split('_')[0]) 
+                sample = str(file.split('_')[0])
                 if len(sample.split('.')) > 1:
                     sample = str(file.split('.')[0])
                 condition = 'normal'
-                
                 if sample in tumour_mapping.keys():
                     condition = 'tumour'
                 if fnmatch.fnmatch(file, '*.R1.*'):
