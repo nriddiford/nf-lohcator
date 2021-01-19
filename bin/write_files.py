@@ -25,27 +25,46 @@ def write_plan(options):
 
     tumour_mapping = find_normal(options)
 
-    with open(options.out_file, 'w') as out:
-        out.write('tumour_id,tr1,tr2,normal_id,nr1,nr2\n')
-        r1 = ''
-        for file in sorted(os.listdir(options.dir)):
-            if file.endswith(options.ext):
-                sample = str(file.split('_')[0])
-                if len(sample.split('.')) > 1:
-                    sample = str(file.split('.')[0])
-                condition = 'normal'
-                if sample in tumour_mapping.keys():
-                    condition = 'tumour'
-                if fnmatch.fnmatch(file, '*.R1.*'):
-                    r1 = os.path.join(options.dir, file)
-                    continue
-                r2 = os.path.join(options.dir, file)
-                print("Sample %s is %s: [%s, %s]" % (sample, condition, r1, r2))
-                l = ','.join(map(str,[sample, r1, r2]))
-                if condition == 'tumour':
-                    out.write(l + ',')
-                else:
-                    out.write(l + '\n')
+    file_mapping = [
+        {
+            'tumour_id': {
+                'tr1': '',
+                'tr2': ''
+            },
+            'normal_id': {
+                'tr1': '',
+                'tr2': ''
+            }
+        }
+    ]
+
+    for tumour_id in tumour_mapping.keys():
+        file_path = os.path.join(options.dir)
+        # for file in glob.glob('data/HUM-1*'):
+        file_mapping[glob.glob('data/HUM-1*')] = glob.glob('data/HUM-3*')
+        file_mapping
+
+    # with open(options.out_file, 'w') as out:
+    #     out.write('tumour_id,tr1,tr2,normal_id,nr1,nr2\n')
+    #     r1 = ''
+    #     for file in sorted(os.listdir(options.dir)):
+    #         if file.endswith(options.ext):
+    #             sample = str(file.split('_')[0])
+    #             if len(sample.split('.')) > 1:
+    #                 sample = str(file.split('.')[0])
+    #             condition = 'normal'
+    #             if sample in tumour_mapping.keys():
+    #                 condition = 'tumour'
+    #             if fnmatch.fnmatch(file, '*.R1.*'):
+    #                 r1 = os.path.join(options.dir, file)
+    #                 continue
+    #             r2 = os.path.join(options.dir, file)
+    #             print("Sample %s is %s: [%s, %s]" % (sample, condition, r1, r2))
+    #             l = ','.join(map(str,[sample, r1, r2]))
+    #             if condition == 'tumour':
+    #                 out.write(l + ',')
+    #             else:
+    #                 out.write(l + '\n')
 
     return True
 
