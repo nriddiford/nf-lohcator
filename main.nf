@@ -1,11 +1,41 @@
 params.multiqc = "$baseDir/multiqc"
 
+c_green = "\033[0;32m";
+c_purple = "\033[0;35m";
+c_red =  "\033[0;31m";
+c_reset = "\033[0m";
+b_green = "\033[1;32m";
+// c_blue = "\e[1;34mLight Blue Text\e[0m"
+
+// BLUE='\033[0;34m'
+c_blue='\033[0;34m'
+
 log.info """\
-    This is a NEXTFLOW PIPELINE for running lohcator on matched tumor normal pairs
+===
+This is a NEXTFLOW PIPELINE for detecting LOH in matched tumour normal pairs.
 
-    genome: ${params.genome}
-    outdir: ${params.outputDir}
+Running with the following user-defined options:
+--- ${b_green}config${c_reset} ---
+  --samplePlan: ${c_blue}${params.samplePlan}${c_reset}
+  --outdir: ${c_blue}${params.outputDir}${c_reset}
+  --condaCacheDir ${c_blue}${params.condaCacheDir}${c_reset}
 
+--- ${b_green}Trimmomatic (v0.39)${c_reset} ---
+  --adapters [ILLUMINACLIP:]  ${c_blue}${params.adapters}${c_reset}
+
+--- ${b_green}Bwa (v0.7.17)${c_reset} ---
+  --genome  ${c_blue}${params.genome}${c_reset}
+
+--- ${b_green}Varscan (v2.4.4)${c_reset} ---
+  --varscan_normal_coverage [--min-coverage-normal] ${params.varscan_normal_coverage}
+  --varscan_tumour_coverage [--min-coverage-tumor] ${params.varscan_tumour_coverage}
+  --varscan_tumour_purity [--tumor-purity] ${params.varscan_tumour_purity}
+
+--- ${b_green}lohcator ($baseDir/bin/lohcator.py)${c_reset} ---
+  --sample_ids [--config] ${c_blue}${params.sample_ids}${c_reset}
+  --lohcator_chromosome [--chromosome] ${params.lohcator_chromosome}
+
+===
     """
 .stripIndent()
 
@@ -254,14 +284,13 @@ process varscan {
 
 
   script:
-  tumour_purity = 1
   """
   varscan somatic ${tumour_id}.pileup \
     ${tumour_id} \
     --mpileup 1 \
-    --min-coverage-normal ${params.normal_coverage} \
-    --min-coverage-tumor ${params.tumour_coverage} \
-    --tumor-purity ${tumour_purity} \
+    --min-coverage-normal ${params.varscan_normal_coverage} \
+    --min-coverage-tumor ${params.varscan_tumour_coverage} \
+    --tumor-purity ${params.varscan_tumour_purity} \
     --strand-filter 1
     varscan processSomatic ${tumour_id}.snp
     varscan processSomatic ${tumour_id}.indel
@@ -298,8 +327,8 @@ process lohcator {
     echo Running lohcator $tumour_id for Varscan file ${tumour_id}.snp
     python $baseDir/bin/lohcator.py \
         --varscan_file ${tumour_id}.snp \
-        --config $baseDir/data/samples.tsv \
-        --chromosome 'X'
+        --config ${params.sample_ids} \
+        --chromosome ${params.lohcator_chromosome}
     """
 }
 
@@ -380,9 +409,9 @@ workflow.onComplete {
     }
 
     if (workflow.success) {
-        log.info "-${c_purple}[nf-bwa-mem]${c_green} Pipeline completed successfully${c_reset}-"
+        log.info "-${c_purple}[nf-lohcator]${c_green} Pipeline completed successfully${c_reset}-"
     } else {
-        log.info "-${c_purple}[nf-bwa-mem]${c_red} Pipeline completed with errors${c_reset}-"
+        log.info "-${c_purple}[nf-lohcator]${c_red} Pipeline completed with errors${c_reset}-"
     }
 
 }
