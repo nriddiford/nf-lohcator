@@ -63,7 +63,7 @@ def write_plan(options):
             n_id = files[t_id]['normal']['id']
             n_r1 = files[t_id]['normal']['r1']
             n_r2 = files[t_id]['normal']['r2']
-            print("%s is paired with %s" % (t_id, n_id))
+            print("-> %s is paired with %s" % (t_id, n_id))
             l = ','.join(map(str,[t_id, t_r1, t_r2, n_id, n_r1, n_r2]))
             out.write(l + '\n')
 
