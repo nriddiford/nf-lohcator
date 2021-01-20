@@ -33,10 +33,7 @@ def get_reads(options, id):
         r2 = list(filter(r_match.match, reads))[0] # Read Note
 
         d =  {'id': id, 'r1': r1, 'r2': r2}
-    else:
-        print("No reads found!")
-        return False
-    
+
     return d
 
 
