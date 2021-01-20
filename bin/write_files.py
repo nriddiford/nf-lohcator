@@ -12,20 +12,18 @@ import json
 
 
 def find_normal(options):
-    config = pd.read_csv(options.config, delimiter="\t", index_col=False, na_filter=False, names=['sample', 'assay'])
+    config = pd.read_csv(options.config, delimiter="\t", index_col=False, header=0, na_filter=False, names=['tumour', 'normal'])
 
-    samples = config['sample'].tolist()
-    it = iter(samples)
+    d = dict(zip(config['tumour'].tolist(),config['normal'].tolist()))
 
-    s = {}
-    for x in it:
-        s[x] = next(it)
+    return d
 
-    return s
 
-def get_reads(options, id, assay, d):
+def get_reads(options, id):
     file_path = os.path.join(options.dir)
     reads = glob.glob(file_path + id + '*')
+
+    d = {}
 
     if reads:
         f_match = re.compile(".*(R1|forward).*" + options.ext)
@@ -34,11 +32,10 @@ def get_reads(options, id, assay, d):
         r1 = list(filter(f_match.match, reads))[0] # Read Note
         r2 = list(filter(r_match.match, reads))[0] # Read Note
 
-        print("Assay: %s, R1: %s, R2: %s" % (assay, r1, r2))
+        d =  {'id': id, 'r1': r1, 'r2': r2}
 
-        # d.push({"tumour_id": id})
+    return d
 
-        return d
 
 def write_plan(options):
     print("Looking for '*%s' files in %s" % (options.ext, options.dir))
@@ -46,56 +43,29 @@ def write_plan(options):
 
     tumour_mapping = find_normal(options)
 
-    file_mapping = [
-        {
-            'tumour_id': [],
-            'normal_id': []
-        }
-    ]
-            # 'tumour_id': [],
-            # 'normal_id': []
+    d =  {}
+    files = {}
 
     for tumour_id in tumour_mapping.keys():
+        d['tumour'] = get_reads(options, tumour_id)
+        if d['tumour']:
+            d['normal'] = get_reads(options, tumour_mapping[tumour_id])
+            files[tumour_id] = { 'tumour': d['tumour'], 'normal': d['normal'] }
 
-        # for file in glob.glob('data/HUM-1*'):
-        # file_mapping[glob.glob('data/HUM-1*')] = glob.glob('data/HUM-3*')
-        # file_mapping[tumour_id] = glob.glob('data/HUM-1*')
-        # t_reads = glob.glob('data/' + tumour_id + '*')
+    # print(json.dumps(files, indent=4, sort_keys=True))
 
-        file_mapping = get_reads(options, tumour_id, 'tumour', file_mapping)
-
-        # if t_reads:
-        #     r1 = re.compile(".*R1.*" + options.ext)
-        #     r2 = re.compile(".*R2.*" + options.ext)
-        #     # f_read = glob.glob(t_reads + '*R1*' + options.ext)
-        #     tr1 = list(filter(r1.match, t_reads))[0] # Read Note
-        #     tr2 = list(filter(r2.match, t_reads))[0] # Read Note
-        #
-        #     file_mapping[tumour_id] = [tr1, tr2]
-
-    # with open(options.out_file, 'w') as out:
-    #     out.write('tumour_id,tr1,tr2,normal_id,nr1,nr2\n')
-    #     r1 = ''
-    #     for file in sorted(os.listdir(options.dir)):
-    #         if file.endswith(options.ext):
-    #             sample = str(file.split('_')[0])
-    #             if len(sample.split('.')) > 1:
-    #                 sample = str(file.split('.')[0])
-    #             condition = 'normal'
-    #             if sample in tumour_mapping.keys():
-    #                 condition = 'tumour'
-    #             if fnmatch.fnmatch(file, '*.R1.*'):
-    #                 r1 = os.path.join(options.dir, file)
-    #                 continue
-    #             r2 = os.path.join(options.dir, file)
-    #             print("Sample %s is %s: [%s, %s]" % (sample, condition, r1, r2))
-    #             l = ','.join(map(str,[sample, r1, r2]))
-    #             if condition == 'tumour':
-    #                 out.write(l + ',')
-    #             else:
-    #                 out.write(l + '\n')
-
-    print(json.dumps(file_mapping, indent=4, sort_keys=True))
+    with open(options.out_file, 'w') as out:
+        out.write('tumour_id,tr1,tr2,normal_id,nr1,nr2\n')
+        for t_id in sorted(files):
+            t_id = files[t_id]['tumour']['id']
+            t_r1 = files[t_id]['tumour']['r1']
+            t_r2 = files[t_id]['tumour']['r2']
+            n_id = files[t_id]['normal']['id']
+            n_r1 = files[t_id]['normal']['r1']
+            n_r2 = files[t_id]['normal']['r2']
+            print("%s is paired with %s" % (t_id, n_id))
+            l = ','.join(map(str,[t_id, t_r1, t_r2, n_id, n_r1, n_r2]))
+            out.write(l + '\n')
 
     return True
 
@@ -108,7 +78,7 @@ def get_args():
     parser.add_option("--directory", "-d", dest="dir", action="store", help="Directory to look for files in [Default data/]")
     parser.add_option("--extension", "-e", dest="ext", action="store", help="Extension to search for [Default 'fastq.gz']")
 
-    parser.set_defaults(dir='data/', ext='fastq.gz', config='data/samples.tsv', out_file='my_sample_plan.csv')
+    parser.set_defaults(dir='data/', ext='fastq.gz', config='data/samples2.txt', out_file='my_sample_plan.csv')
     options, args = parser.parse_args()
 
     return options, args
