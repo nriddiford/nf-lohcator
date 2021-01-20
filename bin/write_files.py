@@ -21,19 +21,22 @@ def find_normal(options):
 
 def get_reads(options, id):
     file_path = os.path.join(options.dir)
-    reads = glob.glob(file_path + id + '*')
+    reads = glob.glob(file_path + id + '*' + options.ext)
 
     d = {}
 
     if reads:
-        f_match = re.compile(".*(R1|forward).*" + options.ext)
-        r_match = re.compile(".*(R2|reverse).*" + options.ext)
+        f_match = re.compile(".*(R1|forward).*")
+        r_match = re.compile(".*(R2|reverse).*")
         # f_read = glob.glob(t_reads + '*R1*' + options.ext)
         r1 = list(filter(f_match.match, reads))[0] # Read Note
         r2 = list(filter(r_match.match, reads))[0] # Read Note
 
         d =  {'id': id, 'r1': r1, 'r2': r2}
-
+    else:
+        print("No reads found!")
+        return False
+    
     return d
 
 
