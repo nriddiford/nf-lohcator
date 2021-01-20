@@ -1,6 +1,7 @@
 .nextflow*
 work/
-data/
+data/*.gz
+data/*.fa*
 results/
 .DS_Store
 tests/
