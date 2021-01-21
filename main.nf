@@ -341,7 +341,6 @@ process lohcator {
 // Collect stats on various stages
 
 process fastqc {
-
     label 'fastqc'
     tag "$sample_id"
 
@@ -360,7 +359,6 @@ process fastqc {
 
 
 process bamstats {
-
   label 'bamtools'
   tag "$sample_id"
 
@@ -378,9 +376,8 @@ process bamstats {
 }
 
 process multiqc {
-
-    publishDir "$params.outputDir", mode: 'copy'
     label 'fastqc'
+    publishDir "$params.outputDir", mode: 'copy'
 
     input:
     file (multiqc_config) from ch_multiqc_config
