@@ -142,7 +142,7 @@ process align_t {
     label 'medMem'
     label 'bwa'
     tag "$sample_id"
-    publishDir "$params.outputDir/bam"
+    publishDir "$params.outputDir/bam", pattern: "*bam.*"
     echo true
 
     input:
@@ -151,7 +151,7 @@ process align_t {
     tuple sample_id, tumour_id, path(reads) from t_reads_ch1
 
     output:
-    tuple sample_id, tumour_id, "${sample_id}.RG.bam*" into (t_bam_ch, t_bamstats_in_ch)
+    tuple sample_id, tumour_id, "${sample_id}.RG.bam" into (t_bam_ch, t_bamstats_in_ch)
 
     script:
     """
@@ -168,7 +168,7 @@ process align_n {
     label 'medMem'
     label 'bwa'
     tag "$sample_id"
-    publishDir "$params.outputDir/bam"
+    publishDir "$params.outputDir/bam", pattern: "*bam.*"
     echo true
 
     input:
