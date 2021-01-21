@@ -52,6 +52,7 @@ Channel
 
 
 process n_trimmomatic {
+    label 'medMem'
     label 'trimmomatic'
     tag "$normal_id"
     publishDir "$params.outputDir/processed_reads"
@@ -83,6 +84,7 @@ process n_trimmomatic {
 }
 
 process t_trimmomatic {
+    label 'medMem'
     label 'trimmomatic'
     tag "$tumour_id"
     publishDir "$params.outputDir/processed_reads"
