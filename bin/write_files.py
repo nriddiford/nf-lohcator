@@ -75,11 +75,16 @@ def get_args():
 
     parser.add_option("--out_file", "-o", dest="out_file", action="store", help="File to write config to [Default 'my_sample_plan.csv']")
     parser.add_option("--config", "-c", dest="config", action="store", help="Mapping for tumour/normal samples [Default 'data/samples.tsv']")
-    parser.add_option("--directory", "-d", dest="dir", action="store", help="Directory to look for files in [Default data/]")
+    parser.add_option("--directory", "-d", dest="dir", action="store", help="Directory to look for files in")
     parser.add_option("--extension", "-e", dest="ext", action="store", help="Extension to search for [Default 'fastq.gz']")
 
-    parser.set_defaults(dir='data/', ext='fastq.gz', config='data/samples2.txt', out_file='my_sample_plan.csv')
+    parser.set_defaults(ext='fastq.gz', config='data/samples2.txt', out_file='my_sample_plan.csv')
     options, args = parser.parse_args()
+
+    if options.dir is None:
+        parser.print_help()
+        print
+        sys.exit()
 
     return options, args
 
