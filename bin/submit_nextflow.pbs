@@ -12,4 +12,4 @@ cd $out_dir
 
 echo "Sample plan: $sample_plan"
 
-nextflow main.nf -profile cluster,submit,multiconda --samplePlan $sample_plan
+nextflow main.nf -profile cluster,submit,multiconda --samplePlan $sample_plan -resume
