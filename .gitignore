@@ -10,3 +10,4 @@ testing/
 */.html*
 trace*
 log/
+*.csv
