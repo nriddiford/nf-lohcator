@@ -9,3 +9,4 @@ testing/
 *.pyc
 */.html*
 trace*
+log/
