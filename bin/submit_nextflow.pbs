@@ -1,0 +1,15 @@
+#PBS -l nodes=1:ppn=1
+#PBS -l walltime=50:00:00
+#PBS -l mem=20GB
+
+out_dir=$VAR1
+sample_plan=$VAR2
+
+export PATH=$HOME/miniconda3/bin:$PATH
+source activate nextflow
+
+cd $out_dir
+
+echo "Sample plan: $sample_plan"
+
+nextflow main.nf -profile cluster,submit,multiconda --samplePlan $sample_plan -resume
