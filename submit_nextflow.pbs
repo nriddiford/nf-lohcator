@@ -1,10 +1,10 @@
 #PBS -l nodes=1:ppn=1
 #PBS -l walltime=50:00:00
 #PBS -l mem=20GB
-out_dir=/data/kdi_prod/project_result/948/01.00/Analysis/nf/nf-lohcator
+out_dir=$(pwd)
 #PBS -j oe $out_dir/log
 
-export PATH=/bioinfo/guests/nriddifo/miniconda3/bin:$PATH
+export PATH=$HOME/miniconda3/bin:$PATH
 source activate nextflow
 
 cd $out_dir
