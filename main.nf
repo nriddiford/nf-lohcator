@@ -52,7 +52,7 @@ Channel
 
 
 process n_trimmomatic {
-    label 'medMem'
+    label 'smallMem'
     label 'trimmomatic'
     tag "$normal_id"
     publishDir "$params.outputDir/processed_reads"
@@ -84,7 +84,7 @@ process n_trimmomatic {
 }
 
 process t_trimmomatic {
-    label 'medMem'
+    label 'smallMem'
     label 'trimmomatic'
     tag "$tumour_id"
     publishDir "$params.outputDir/processed_reads"
@@ -144,7 +144,7 @@ process align_t {
     label 'medMem'
     label 'bwa'
     tag "$sample_id"
-    publishDir "$params.outputDir/bam", pattern: "*bam.*"
+    publishDir "$params.outputDir/bam", pattern: "*bam*"
     echo true
 
     input:
@@ -170,7 +170,7 @@ process align_n {
     label 'medMem'
     label 'bwa'
     tag "$sample_id"
-    publishDir "$params.outputDir/bam", pattern: "*bam.*"
+    publishDir "$params.outputDir/bam", pattern: "*bam*"
     echo true
 
     input:
