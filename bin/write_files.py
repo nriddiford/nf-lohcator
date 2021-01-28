@@ -21,7 +21,7 @@ def find_normal(options):
 
 def get_reads(options, id):
     file_path = os.path.join(options.dir)
-    reads = glob.glob(file_path + '/' + id + '**' + options.ext)
+    reads = glob.glob(file_path + '/' + id + '.**' + options.ext)
 
     d = {}
 
